@@ -31,7 +31,7 @@ The originator consents to this characterisation of the alterations as a Modific
 ### New: examples, docs, tests
 - `examples/01_micro_impeller.py`, `02_axial_rotor_lean_sweep.py`, `03_wavy_ngv.py`.
 - `docs/01_airfoil_2d.md`, `02_stacking_lean_sweep_wavy.md`, `03_centrifugal_impeller.md`, `04_metrics_clearance_export.md`.
-- 43 new tests in `tests/micro/`; the 16 upstream tests are retained and pass under the new package name.
+- 45 new tests in `tests/micro/`; the 16 upstream tests are retained and pass under the new package name.
 
 ### Behaviours of upstream code found while building this (documented; upstream code not changed)
 1. `Centrif` ray-intersection camber ignores `TE_Metal_Angle`. The non-ray mode honours both end angles.

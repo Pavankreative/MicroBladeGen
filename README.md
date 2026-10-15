@@ -53,8 +53,8 @@ MicroBladeGen puts these quantities next to the geometry so they can be reviewed
 Requires Python 3.10 or newer.
 
 ```bash
-git clone https://github.com/Pavankreative/microbladegen.git
-cd microbladegen
+git clone https://github.com/Pavankreative/MicroBladeGen.git
+cd MicroBladeGen
 pip install -e .
 pip install pytest        # to run the tests
 ```
@@ -127,7 +127,7 @@ The impeller pressure ratio is total-to-total across the impeller only; diffuser
 
 | Quantity | `axial_rotor_064krpm` (hub to tip) | `ngv_micro_turbojet` (hub to tip) |
 |---|---|---|
-| Radius | 38.7 to 52.3 mm | 28.0 to 38.0 mm |
+| Radius | 38.7 to 52.1 mm (tip trimmed by the 0.2 mm gap) | 28.0 to 38.0 mm |
 | Chord | 12.9 to 18.1 mm | 16.5 mm |
 | Solidity | 1.54 to 1.61 | 1.60 to 1.18 |
 | Thickness / chord | 5.7 to 9.4 % | 14.2 to 14.7 % |
@@ -275,6 +275,43 @@ pytest
 The suite contains the 16 upstream geometry tests and 45 tests for the micro layer: continuity and Euler-work closure of
 the sizing, measured blade angles and tip gap of the built impeller, closed-form disk growth, metric definitions, case
 builds, wavy-blade linearity, and export contents (section radii, STL bounds, periodic sector angle).
+
+---
+
+## What I contributed
+
+MicroBladeGen is a Modification of NASA's [PyTurbo-Aero](https://github.com/nasa/pyturbo-aero). The upstream package
+supplies the geometry engine (`Airfoil2D`, `Airfoil3D`, `AirfoilWavy`, `Centrif`, `Passage2D` and the helpers), which I
+renamed and kept functionally unchanged. The micro-turbojet layer, the documentation and its tests are my work
+(file-level record in [`NOTICE.md`](NOTICE.md) and [`CHANGES.md`](CHANGES.md)):
+
+| Area | What I added | Where |
+|---|---|---|
+| Impeller sizing and build | Mean-line centrifugal impeller sizing, and a builder that drives `Centrif` and refines inputs until measured blade angles match the sizing | `micro/impeller.py` |
+| Metrics | Solidity, aspect ratio, t/c, Mach numbers, chord and machine Reynolds numbers, de Haller, turning; cold-air and hot-gas properties | `micro/metrics.py`, `micro/gas.py` |
+| Tip clearance | Disk growth, thermal growth, clearance budget, first-order efficiency and stall-margin effect, geometric tip gap on built impellers | `micro/tip_clearance.py` |
+| Cases and reports | Four editable design cases, summary tables, CLI (`list`, `summary`, `export`) | `micro/cases.py`, `micro/summary.py`, `micro/__main__.py` |
+| CFD export | Sections, STL surfaces, flow-path curves and manifest with periodic sector angle | `micro/export_cfd.py` |
+| Documentation, examples, tests | Four engineering documents, three scripts, 45 tests | `docs/`, `examples/`, `tests/micro/` |
+| Upstream behaviour documented | Four upstream quirks found while building (camber mode, tip clearance, lean/sweep naming, edge distortion) | `CHANGES.md` |
+
+---
+
+## Validation
+
+**Status: internally consistent and tested; not validated against hardware or published test data.**
+
+| Level | What it shows | Status |
+|---|---|---|
+| Upstream geometry tests | The inherited geometry engine still works under the new package name | 16 passed (2026-10-15) |
+| Micro-layer tests | Continuity and Euler-work closure of the sizing, measured blade angles and tip gap, closed-form disk growth, metric definitions, case builds, export contents | 45 passed (2026-10-15) |
+| Documented examples | The impeller and axial-row tables in this README regenerate from the shipped cases (r2 38.0 mm, U2 438 m/s, tip Mach 1.29, recommended cold gap 0.131 mm) | Reproduced |
+| Sizing vs published data | `size_impeller` against a published, open centrifugal-compressor test case (tip speed, diffusion ratio, exit width, efficiency trend) | Planned |
+| Clearance penalty | Compare the clearance-effect trend with published efficiency-versus-clearance data and calibrate the coefficients | Planned |
+| Mesh and CFD | A single-passage mesh and solver run from the exported sections, checking that the blade angles and throat match the sizing | Planned |
+
+Total: 61 tests passed in about 70 s on Python 3.13. The clearance coefficients and recommended-gap margins are generic
+defaults until calibrated.
 
 ---
 
