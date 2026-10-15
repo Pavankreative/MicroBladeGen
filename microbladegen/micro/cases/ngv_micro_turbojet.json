@@ -1,0 +1,85 @@
+{
+  "name": "ngv_micro_turbojet",
+  "type": "axial_row",
+  "description": "Turbine nozzle guide vane for a ~0.24 kg/s micro-turbojet: axial inlet, 66.5 deg exit swirl, mean exit Mach near 0.8, hot-gas properties.",
+  "row": {
+    "rotating": false,
+    "rpm": 0,
+    "hub_radius_mm": 28.0,
+    "tip_radius_mm": 38.0,
+    "nblades": 17,
+    "axial_velocity": 195.0,
+    "inlet_angle_mean": 0.0,
+    "exit_angle_mean": 66.5,
+    "Tt_in": 1100.0,
+    "Pt_in": 290000.0,
+    "gamma": 1.33
+  },
+  "sections": {
+    "span": [
+      0.0,
+      0.5,
+      1.0
+    ],
+    "axial_chord_mm": [
+      10.0,
+      10.0,
+      10.0
+    ],
+    "stagger_deg": [
+      52.0,
+      52.0,
+      52.0
+    ]
+  },
+  "thickness": {
+    "ss": [
+      0.16,
+      0.13,
+      0.11,
+      0.1
+    ],
+    "ps": [
+      0.05,
+      0.02,
+      -0.01
+    ],
+    "le": 0.06,
+    "te_radius_mm": 0.3
+  },
+  "stack": "Centroid",
+  "sweep": {
+    "y": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "z": [
+      0.0,
+      0.5,
+      1.0
+    ]
+  },
+  "lean": {
+    "x": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "z": [
+      0.0,
+      0.5,
+      1.0
+    ]
+  },
+  "build": {
+    "nProfiles": 20,
+    "num_points": 80,
+    "trailing_edge_points": 20
+  },
+  "notes": [
+    "Prime blade count (17) keeps it clear of common rotor-blade-count multiples.",
+    "Hot-gas constants: gamma 1.33, R 287 J/kg/K.",
+    "Free-vortex exit swirl makes the hub the highest-Mach section; check the hub exit Mach in the metrics table."
+  ]
+}

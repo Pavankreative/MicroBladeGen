@@ -1,0 +1,87 @@
+{
+  "name": "axial_rotor_064krpm",
+  "type": "axial_row",
+  "description": "First-stage rotor of a 0.6 kg/s, 64,000 rpm micro-turbojet axial compressor (free-vortex triangles, R = 0.5 at mean line).",
+  "row": {
+    "rotating": true,
+    "rpm": 64000,
+    "hub_radius_mm": 38.7,
+    "tip_radius_mm": 52.3,
+    "nblades": 29,
+    "axial_velocity": 145.0,
+    "inlet_angle_mean": 38.1,
+    "exit_angle_mean": 52.9,
+    "Tt_in": 288.15,
+    "Pt_in": 101325.0,
+    "Tt_out": 312.0,
+    "gamma": 1.4
+  },
+  "sections": {
+    "span": [
+      0.0,
+      0.5,
+      1.0
+    ],
+    "axial_chord_mm": [
+      10.0,
+      10.5,
+      11.0
+    ],
+    "stagger_deg": [
+      38.0,
+      46.0,
+      52.0
+    ]
+  },
+  "thickness": {
+    "ss": [
+      0.12,
+      0.1,
+      0.08,
+      0.07
+    ],
+    "ps": [
+      0.05,
+      0.02,
+      -0.01
+    ],
+    "le": 0.04,
+    "te_radius_mm": 0.25
+  },
+  "stack": "Trailing_Edge",
+  "sweep": {
+    "y": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "z": [
+      0.0,
+      0.5,
+      1.0
+    ]
+  },
+  "lean": {
+    "x": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "z": [
+      0.0,
+      0.5,
+      1.0
+    ]
+  },
+  "build": {
+    "nProfiles": 20,
+    "num_points": 80,
+    "trailing_edge_points": 20
+  },
+  "tip_gap_mm": 0.2,
+  "notes": [
+    "Blade angles are the free-vortex flow angles; add incidence/deviation before using them as metal angles.",
+    "29 blades give a solidity of about 1.5 across the span.",
+    "t/c grows from hub to tip because one thickness array is scaled by each section's chord; edit the case to taper it the other way."
+  ]
+}

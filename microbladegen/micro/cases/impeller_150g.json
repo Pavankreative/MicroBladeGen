@@ -1,0 +1,29 @@
+{
+  "name": "impeller_150g",
+  "type": "centrifugal_impeller",
+  "description": "Small-drone impeller: 0.15 kg/s at 150,000 rpm, impeller PR 3.0, radial exit with moderate backsweep.",
+  "requirements": {
+    "mass_flow": 0.15,
+    "rpm": 150000,
+    "pressure_ratio": 3.0,
+    "eta_tt": 0.8,
+    "backsweep": 40.0,
+    "beta1s_flow": 55.0,
+    "incidence": 3.0,
+    "hub_to_shroud": 0.38,
+    "exit_flow_coefficient": 0.25,
+    "splitters": true
+  },
+  "geometry": {
+    "tip_thickness_mm": 0.5,
+    "root_thickness_factor": 1.5
+  },
+  "clearance": {
+    "material": "titanium_6al4v",
+    "rotor_delta_T": 60.0,
+    "casing_delta_T": 20.0
+  },
+  "notes": [
+    "Exit blade height is only a few millimetres: tip clearance dominates the loss budget."
+  ]
+}

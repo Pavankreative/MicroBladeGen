@@ -1,0 +1,10 @@
+__pycache__/
+*.egg-info/
+.pytest_cache/
+output/
+out/
+# files written by the upstream tests when run from the repo root
+aero_geometry.*
+mp-theta.png
+x-r.png
+blade.stl

@@ -1,0 +1,37 @@
+[project]
+name = "microbladegen"
+version = "0.1.0"
+description = "Blade and impeller geometry design for micro-turbojets and UAV propulsion: 2D profiles, 3D stacking with lean/sweep/wavy options, centrifugal impellers, tip-clearance modelling and CFD-ready export"
+readme = "README.md"
+authors = [{ name = "Pavan" }]
+requires-python = ">=3.10"
+keywords = ["micro turbojet", "UAV propulsion", "turbomachinery", "centrifugal compressor", "blade design"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Topic :: Scientific/Engineering :: Physics",
+    "License :: OSI Approved :: NASA Open Source Agreement v1.3 (NASA-1.3)",
+]
+dependencies = [
+    "plotly",
+    "tqdm",
+    "scipy",
+    "pandas",
+    "numpy",
+    "matplotlib",
+    "numpy-stl",
+    "shapely",
+    "requests",
+]
+
+[project.urls]
+Homepage = "https://github.com/Pavankreative/microbladegen"
+
+[dependency-groups]
+dev = ["pytest"]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["microbladegen"]
