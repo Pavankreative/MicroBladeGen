@@ -121,17 +121,6 @@ class pspline:
             self.spld.append(xp)
 
         '''
-            Catch the case where there were exactly three points
-            in the curve, and spline was used to generate the
-            interpolant. In self case, spline creates a curve with
-            only one piece, not two.
-        '''
-        if (self.cumarclen.size == 3) and (method == spline_type.spline):
-            self.cumarclen = self.spl[0].x
-            n = np.size(self.cumarclen)
-            self.chordlen = [sum(self.chordlen)]
-                
-        '''
             Generate the total arclength along the curve
             by integrating each segment and summing the
             results. The integration scheme does its job

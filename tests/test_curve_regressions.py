@@ -33,3 +33,14 @@ def test_invalid_geometry(points):
 def test_invalid_count(count):
     with pytest.raises(ValueError):
         resample_curve([[0, 0], [1, 0]], count)
+
+
+@pytest.mark.parametrize('z', [None, [0, 0, 0]])
+def test_three_point_cubic_spline(z):
+    from microbladegen.helper.pspline import spline_type
+    spline = pspline([2, 1, 0], [0, 0, 0], z, method=spline_type.spline)
+    points, _ = spline([0, .5, 1])
+    expected = np.array([[2, 0], [1, 0], [0, 0]])
+    if z is not None:
+        expected = np.column_stack([expected, np.zeros(3)])
+    np.testing.assert_allclose(points, expected, atol=1e-9)
