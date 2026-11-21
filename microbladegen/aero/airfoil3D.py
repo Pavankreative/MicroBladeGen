@@ -987,33 +987,22 @@ class Airfoil3D:
             ps_x_new = ps_x + ps_nx * shell_thickness
             ps_y_new = ps_y + ps_ny * shell_thickness
 
-            # Create a spline for suction and pressure side, check whether they intersect
-            ss_spline = pspline(np.flip(ss_y_new),np.flip(ss_x_new)) # Points need to be in increasing order
-            ps_spline = pspline(np.flip(ps_y_new),np.flip(ps_x_new))
-
-
-            intersect1 = pspline_intersect(ss_spline,ps_spline,0,0.5) # Check for intersection at the beginning
-            intersect2 = pspline_intersect(ss_spline,ps_spline,0.7,1.0) # Check for intersection at the end
-
-            if (intersect1[0]!=-1.0): # near leading edge
-                pt1,_ = ss_spline.get_point(intersect1[0])
-                intersect1_yss = pt1[0,0]
-                pt2,_ = ps_spline.get_point(intersect1[1])
-                intersect1_yps = pt2[0,0]
-                ss_x_new = ss_x_new[ss_y_new<intersect1_yss]
-                ss_y_new = ss_y_new[ss_y_new<intersect1_yss]
-                ps_x_new = ps_x_new[ps_y_new<intersect1_yps]
-                ps_y_new = ps_y_new[ps_y_new<intersect1_yps]
-
-            if (intersect2[0]!=-1.0): # trailing edge
-                pt1,_ = ss_spline.get_point(intersect2[0])
-                intersect2_yss = pt1[0,0]
-                pt2,_ = ps_spline.get_point(intersect2[1])
-                intersect2_yps = pt2[0,0]
-                ss_x_new = ss_x_new[ss_y_new>intersect2_yss]
-                ss_y_new = ss_y_new[ss_y_new>intersect2_yss]
-                ps_x_new = ps_x_new[ps_y_new>intersect2_yps]
-                ps_y_new = ps_y_new[ps_y_new>intersect2_yps]
+            # Trim by path parameter, not coordinate inequalities: sections can
+            # reverse direction and need not be monotone in either coordinate.
+            ss_spline = pspline(ss_x_new, ss_y_new)
+            ps_spline = pspline(ps_x_new, ps_y_new)
+            first = pspline_intersect(ss_spline, ps_spline, 0, 0.5)
+            last = pspline_intersect(ss_spline, ps_spline, 0.7, 1.0)
+            for side, spline in enumerate((ss_spline, ps_spline)):
+                lo = first[side] if first[0] != -1 else 0.
+                hi = last[side] if last[0] != -1 else 1.
+                if hi <= lo:
+                    raise ValueError("Shell intersections leave no valid contour")
+                points, _ = spline(np.linspace(lo, hi, shell_points))
+                if side == 0:
+                    ss_x_new, ss_y_new = points.T
+                else:
+                    ps_x_new, ps_y_new = points.T
 
             # Make sure the start and end points are the same
             # Make sure LE and TE start and end at the same point.

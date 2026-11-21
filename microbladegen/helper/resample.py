@@ -7,29 +7,36 @@ import numpy.typing as npt
 
 
 
-def resample_curve(curve:npt.NDArray, M:int=100):
-    # Remove duplicate/near-duplicate consecutive points
-    dists = np.linalg.norm(np.diff(curve, axis=0), axis=1)
-    keep = np.concatenate([[True], dists > 1e-12])
-    curve = curve[keep]
-    _, idx = np.unique(curve, axis=0, return_index=True)
-    if len(idx) < len(curve):
-        curve = curve[np.sort(idx)]
-    tck, _ = splprep(curve.T, s=0, per=0)
-    u_new = np.linspace(0, 1, M)
-    return np.stack(splev(u_new, tck), axis=1) # type: ignore
- 
-def arc_length_param_strict(points: npt.NDArray) -> Tuple[npt.NDArray,npt.NDArray]:
-    deltas = np.diff(points, axis=0)
-    seg_lengths = np.linalg.norm(deltas, axis=1)
-    arc = np.concatenate([[0], np.cumsum(seg_lengths)])
-    
-    # Remove duplicates from arc to ensure strictly increasing values
-    _, unique_idx = np.unique(arc, return_index=True)
-    arc = arc[unique_idx]
-    points = points[unique_idx]
+def clean_curve_points(points):
+    """Remove consecutive zero-length segments without sorting or opening loops."""
+    points = np.asarray(points, dtype=float)
+    if points.ndim != 2 or points.shape[1] not in (2, 3) or len(points) < 2:
+        raise ValueError("Expected at least two 2D or 3D points")
+    if not np.isfinite(points).all():
+        raise ValueError("Curve coordinates must be finite")
+    keep = np.r_[True, np.linalg.norm(np.diff(points, axis=0), axis=1) > 1e-12]
+    points = points[keep]
+    if len(points) < 2:
+        raise ValueError("Curve must have nonzero length")
+    return points
 
-    arc /= arc[-1]  # Normalize to [0, 1]
+
+def validate_count(count):
+    if isinstance(count, (bool, np.bool_)) or not isinstance(count, (int, np.integer)) or count < 2:
+        raise ValueError("Sample count must be an integer >= 2")
+
+
+def resample_curve(curve: npt.NDArray, M: int = 100):
+    validate_count(M)
+    curve = clean_curve_points(curve)
+    tck, _ = splprep(curve.T, s=0, per=0, k=min(3, len(curve) - 1))
+    return np.stack(splev(np.linspace(0, 1, M), tck), axis=1)
+
+
+def arc_length_param_strict(points: npt.NDArray) -> Tuple[npt.NDArray, npt.NDArray]:
+    points = clean_curve_points(points)
+    arc = np.r_[0., np.cumsum(np.linalg.norm(np.diff(points, axis=0), axis=1))]
+    arc /= arc[-1]
     return arc, points
 
 def curvature_2d(x, y):
@@ -58,11 +65,8 @@ def resample_by_curvature(points: npt.NDArray, N: int) -> npt.NDArray:
     """
     Resample 2D or 3D curve using curvature-based importance sampling and PCHIP interpolation.
     """
-    _, idx = np.unique(points, axis=0, return_index=True)
-    if len(idx) < len(points):
-        points = points[np.sort(idx)]
-    if points.shape[0] < 2:
-        raise ValueError("Need at least 2 unique points.")
+    validate_count(N)
+    points = clean_curve_points(points)
 
     dim = points.shape[1]
 

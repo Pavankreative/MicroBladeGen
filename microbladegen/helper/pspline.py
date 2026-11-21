@@ -6,7 +6,8 @@ from scipy import integrate
 import math
 import enum
 import copy
-from scipy.optimize import minimize
+from scipy.optimize import minimize, brentq
+from .resample import clean_curve_points
 import numpy.typing as npt 
 from .order_pts import order_points_by_spline_arc_length
 
@@ -90,17 +91,10 @@ class pspline:
         px = convert_to_ndarray(px)
         py = convert_to_ndarray(py)
                 
-        if (len(pz)==0):
-            self.ndim = 2 # there's only x and y
-            self.pxy = np.stack((px,py),axis=1)
-            self.pxy = np.unique(self.pxy, axis=0)
-            self.chordlen = np.sqrt(np.sum(np.array((np.power(np.diff(self.pxy[:,0]),2), np.power(np.diff(self.pxy[:,1]),2)),dtype=float),axis=0))
-        else:
-            self.ndim = 3
-            self.pz = convert_to_ndarray(pz)
-            self.pxy = np.stack((px,py,pz),axis=1)
-            self.pxy = np.unique(self.pxy, axis=0)
-            self.chordlen = np.sqrt(np.sum(np.array((np.power(np.diff(self.pxy[:,0]),2), np.power(np.diff(self.pxy[:,1]),2),np.power(np.diff(self.pxy[:,2]),2)),dtype=float),axis=0))
+        coordinates = (px, py) if pz is None or len(pz) == 0 else (px, py, pz)
+        self.pxy = clean_curve_points(np.stack(coordinates, axis=1))
+        self.ndim = self.pxy.shape[1]
+        self.chordlen = np.linalg.norm(np.diff(self.pxy, axis=0), axis=1)
         self.n = self.pxy.shape[0]
         self.chordlen = self.chordlen/np.sum(self.chordlen)
         self.cumarclen = np.append(np.zeros(1),np.cumsum(self.chordlen))
@@ -161,8 +155,7 @@ class pspline:
                 would not have been perfectly (numerically)
                 consistent with the next operation in self tool.
             '''
-            temp = integrate.odeint(self.__segkernel__,y0=0,t=[0,self.chordlen[i]],rtol=1E-5) # type: ignore
-            self.seglen[i] = temp[-1]
+            self.seglen[i] = integrate.quad(lambda u: float(self.__segkernel__(0, u)[0]), 0, self.chordlen[i], epsabs=1e-10)[0]
             # r = integrate.ode(self.__segkernel__).set_integrator('vode',method='bdf') 
             # r.set_initial_value(0,0)    
             
@@ -192,97 +185,24 @@ class pspline:
                 (npt.NDArray): dudt - derivative with time
         """
     
-        t = convert_to_ndarray(t)      
-        nt = len(t)  
-        
-        pt = np.empty((nt,self.ndim))
-        pt[:] = np.nan
-
-        '''
-        Find out which bins we need
-
-        '''
-        tbins = np.digitize(t*self.totalsplinelength, self.cumseglen)      # type: ignore
-
-        # Catch problems at the end             
-          
-        tbins[np.logical_or((tbins <= 0),(t <= 0))] = 1 # for self to work, needs to be numpy array
-        tbins[np.logical_or((tbins >= (self.n-1)), (t >= 1))] = self.n - 2
-
-        '''
-        Do the fractional integration within each segment
-        for the interpolated points. t is the parameter
-        used to define the splines. It is defined in terms
-        of a linear chordal arclength. This works nicely when
-        a linear piecewise interpolant was used. However,
-        what is asked for is an arclength interpolation
-        in terms of arclength of the spline itself. Call s
-        the arclength traveled along the spline.
-        s = self.totalsplinelength*t;
-        '''
-        s = self.totalsplinelength*t # type: ignore
-
-        ti = t
-        for i in range(nt):
-            # si is the piece of arc length that we will look
-            # for in self spline segment.
-            si = s[i] - self.cumseglen[tbins[i]]
-            
-            # extract polynomials for the derivatives
-            # in the interval the point lies in
-            for j in range(self.ndim):
-                self.polyarray[j,:] = self.spld[j].c[:,tbins[i]]
-            
-            
-            # the ode45 options will now include an events property
-            # so we can catch zero crossings.            
-            
-            ''' 
-            we need to integrate in t, until the integral
-            crosses the specified value of si. Because we
-            have defined totalsplinelength, the lengths will
-            be normalized at self point to a unit length.
-            '''
-            
-            # Start the ode solver at -si, so we will just
-            # look for an event where y crosses zero.
-            [temp,infodict] = integrate.odeint(self.__segkernel__,y0=-si,t=[0,self.chordlen[tbins[i]]],rtol=1E-9)
-
-            # [tout,yout,te,ye] = ode45(@(t,y) self.segkernel(t,y),[0,self.chordlen(tbins(i))],-si,opts); %#ok
-            
-            # # we only need that point where a zero crossing occurred
-            # # if no crossing was found, then we can look at each end.
-            # if (not te): # Check if te is empty
-            #     ti[i] = te[1] + self.cumarclen(tbins[i])
-            # else:
-            #     # a crossing must have happened at the very
-            #     # beginning or the end, and the ode solver
-            #     # missed it, not trapping that event.
-            #     if abs(yout[1]) < abs(yout[-1]):
-            #         # the event must have been at the start.
-            #         ti[i] = tout[0] + self.cumarclen(tbins[i])
-            #     else:
-            #         # the event must have been at the end.
-            #         ti[i] = tout[-1] + self.cumarclen(tbins[i])
-                
-        
-        # Interpolate the parametric splines at ti to get
-        # our interpolated value.
-        for L in range(self.ndim):
-            pp = PPoly(self.spl[L].c, self.spl[L].x) # ppval(self.spl{L},ti)
-            pt[:,L] = pp(ti)
-        ind = order_points_by_spline_arc_length(pt)
-        pt = pt[ind,:]
-        
-        # do we need to compute first derivatives here at each point?
-        dudt = np.zeros((nt,self.ndim))
-        for L in range(self.ndim):
-            pp = PPoly(self.spld[L].c, self.spld[L].x) # type: ignore # ppval(ti,self.spld{L})
-            dudt[:,L] = pp(ti)
-        dudt = dudt[ind,:]
-
-        return pt,dudt # type: ignore
-
-
-
-
+        fractions = np.atleast_1d(np.asarray(t, dtype=float))
+        if fractions.ndim != 1 or not np.isfinite(fractions).all() or np.any((fractions < 0) | (fractions > 1)):
+            raise ValueError("Arc fractions must be finite and within [0, 1]")
+        parameters = np.empty_like(fractions)
+        # Invert integrated spline speed within each segment. Preserve query order.
+        for i, fraction in enumerate(fractions):
+            if fraction == 0 or fraction == 1:
+                parameters[i] = fraction
+                continue
+            target = fraction * self.totalsplinelength
+            segment = int(np.clip(np.searchsorted(self.cumseglen, target, side="right") - 1, 0, self.n - 2))
+            lo, hi = self.cumarclen[segment:segment + 2]
+            remaining = target - self.cumseglen[segment]
+            def speed(u):
+                return float(np.linalg.norm([spline(u) for spline in self.spld]))
+            length = integrate.quad(speed, lo, hi, epsabs=1e-10)[0]
+            remaining = np.clip(remaining, 0., length)
+            parameters[i] = brentq(lambda u: integrate.quad(speed, lo, u, epsabs=1e-10)[0] - remaining, lo, hi)
+        points = np.column_stack([spline(parameters) for spline in self.spl])
+        derivatives = np.column_stack([spline(parameters) for spline in self.spld])
+        return points, derivatives
